@@ -7,6 +7,7 @@ pub enum PtxError {
     
     InvalidOuterToken,
     OuterTokenOrder(OuterToken, OuterToken),
+    MetadataTokenAfterPreamble(OuterToken),
 
     NoLoadedBuffer,
     NotForwardSlashOrStar,

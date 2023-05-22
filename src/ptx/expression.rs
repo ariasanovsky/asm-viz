@@ -18,7 +18,7 @@ impl TryFrom<&str> for OuterToken {
             "version" => OuterToken::Version,
             "target" => OuterToken::Target,
             "address_size" => OuterToken::AddressSize,
-            "func" => OuterToken::AddressSize,
+            "func" => OuterToken::Function,
             "global" => OuterToken::Global,
             "visible" => OuterToken::Visible,
             _ => return Err(PtxError::InvalidOuterToken),
@@ -34,13 +34,13 @@ pub enum Comment {
 
 impl PtxReader {
     pub fn push_line_comment(&mut self) -> Result<Option<OuterToken>, PtxError> {
+        let comment = self.drain_buffer()?;
         self.comments.push(Comment::Line(
             self.num,
-            String::from_utf8(
-                self.line.drain(..).collect()
-        )?));
+            comment
+        ));
 
-        println!("new comment! all comments:\n{:?}", self.comments);
+        //println!("new comment! all comments:\n{:?}", self.comments);
 
         Ok(None)
     }
@@ -49,8 +49,12 @@ impl PtxReader {
 
 #[derive(Debug)]
 pub struct DeclaredFunction {
-    retvalue: String,
+    ret_value: Option<String>,
     name: String,
-    params: Vec<String>,
+    parameters: Vec<String>,
 }
 
+#[derive(Debug)]
+pub struct Signature {
+
+}

@@ -9,7 +9,7 @@ use expression::*;
 #[derive(Debug, Default)]
 pub struct PtxReader {
     reader: Option<BufReader<File>>,
-    line: Vec<u8>,
+    buffer: Vec<u8>,
     num: usize,
     comments: Vec<Comment>,
     metadata: Option<Metadata>,
@@ -58,29 +58,61 @@ pub enum OpenDelimeter {
 
 impl PtxReader {
     pub fn populate(&mut self) -> Result<(), PtxError> {
-        self.populate_metadata()?;
-        self.populate_to_end()
+        self.preamble()?;
+        self.body()
     }
 
-    fn populate_metadata(&mut self) -> Result<(), PtxError> {
+    fn preamble(&mut self) -> Result<(), PtxError> {
         let version = self.version()?;
-        println!("version = {version}");
+        //println!("version = {version}");
         let target = self.target()?;
-        println!("target = {target}");
+        //println!("target = {target}");
         let address_size = self.address_size()?;
-        println!("address_size = {address_size}");
+        //println!("address_size = {address_size}");
         self.metadata = Some(Metadata { version, target, address_size });
         println!("{self:?}");
         Ok(())
     }
 
-    fn populate_to_end(&mut self) -> Result<(), PtxError> {
-        todo!()
+    fn body(&mut self) -> Result<(), PtxError> {
+        match self.outer_token()? {
+            token @ (
+                OuterToken::Version |
+                OuterToken::Target  |
+                OuterToken::AddressSize
+            ) => Err(PtxError::MetadataTokenAfterPreamble(token)),
+            OuterToken::Function => self.function(),
+            OuterToken::Global => todo!(),
+            OuterToken::Visible => todo!(),
+        }
     }
     
+    fn function(&mut self) -> Result<(), PtxError> {
+        let signature = self.signature()?;
+        todo!()
+    }
+
+    fn signature(&mut self) -> Result<Signature, PtxError> {
+        let mut signature = self.trimmed_drain_buffer()?;
+        println!("sig = {signature}");
+        let mut ret_value: Option<String> = None;
+        match (signature.starts_with('('), signature.find(')')) {
+            (true, None) => todo!("look for ')' on next line"),
+            (true, Some(pos)) => {
+                let splits = signature.split_at(pos);
+                ret_value = Some(splits.0[1..].into());
+                signature = splits.1[1..].trim_start().into();
+            },
+            (false, _) => todo!(),
+        }
+        println!("ret_value = {ret_value:?}");
+        println!("signature = {signature:?}");
+        todo!()
+    }
+
     fn version(&mut self) -> Result<String, PtxError> {
         match self.outer_token()? {
-            OuterToken::Version => Ok(self.drain_line()?),
+            OuterToken::Version => Ok(self.drain_buffer()?),
             token => Err(PtxError::OuterTokenOrder(
                 token, OuterToken::Version
             ))
@@ -89,7 +121,7 @@ impl PtxReader {
 
     fn target(&mut self) -> Result<String, PtxError> {
         match self.outer_token()? {
-            OuterToken::Target => Ok(self.drain_line()?),
+            OuterToken::Target => Ok(self.drain_buffer()?),
             token => Err(PtxError::OuterTokenOrder(
                 token, OuterToken::Version
             ))
@@ -98,7 +130,7 @@ impl PtxReader {
 
     fn address_size(&mut self) -> Result<String, PtxError> {
         match self.outer_token()? {
-            OuterToken::AddressSize => Ok(self.drain_line()?),
+            OuterToken::AddressSize => Ok(self.drain_buffer()?),
             token => Err(PtxError::OuterTokenOrder(
                 token, OuterToken::Version
             ))
@@ -108,7 +140,7 @@ impl PtxReader {
     fn outer_expression(&mut self) -> Result<Option<OuterToken>, PtxError> {
         let delim = self.open_delimeter()?;
         println!("delim = {delim:?}");
-        println!("buffer = {:?}", String::from_utf8(self.line.clone()).unwrap());
+        self._show_line();
         match delim {
             OpenDelimeter::LineComment => self.push_line_comment(),
             OpenDelimeter::Period => {
@@ -120,6 +152,10 @@ impl PtxReader {
             }
             token => todo!("token {token:?}"),
         }
+    }
+    
+    fn _show_line(&self) {
+        println!("line = {:?}", String::from_utf8(self.buffer.clone()));
     }
 
     pub fn outer_token(&mut self) -> Result<OuterToken, PtxError> {
