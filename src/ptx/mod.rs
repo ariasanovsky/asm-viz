@@ -12,7 +12,7 @@ pub struct PtxReader {
     line: Vec<u8>,
     num: usize,
     comments: Vec<Comment>,
-    Metadata: Option<Metadata>,
+    metadata: Option<Metadata>,
     //state: ReaderState,
 }
 
@@ -58,8 +58,7 @@ pub enum OpenDelimeter {
 
 impl PtxReader {
     pub fn populate(&mut self) -> Result<(), PtxError> {
-        let data = self.populate_metadata()?;
-        println!("{data:?}");
+        self.populate_metadata()?;
         self.populate_to_end()
     }
 
@@ -67,7 +66,8 @@ impl PtxReader {
         let version = self.version()?;
         let target = self.target()?;
         let address_size = self.address_size()?;
-        todo!()
+        self.metadata = Some(Metadata { version, target, address_size });
+        Ok(())
     }
 
     fn populate_to_end(&mut self) -> Result<(), PtxError> {
@@ -75,7 +75,14 @@ impl PtxReader {
     }
     
     fn version(&mut self) -> Result<String, PtxError> {
-        todo!()
+        match self.outer_token()? {
+            OuterToken::Version => Ok(
+                "foo".into()
+            ),
+            token => Err(PtxError::OuterTokenOrder(
+                token, OuterToken::Version
+            ))
+        }
     }
 
     fn target(&mut self) -> Result<String, PtxError> {
@@ -86,21 +93,30 @@ impl PtxReader {
         todo!()
     }
 
-    pub fn outer_expression(&mut self) -> Result<Option<OuterToken>, PtxError> {
+    fn outer_expression(&mut self) -> Result<Option<OuterToken>, PtxError> {
         let delim = self.open_delimeter()?;
         println!("delim = {delim:?}");
         println!("buffer = {:?}", self.line);
         match self.open_delimeter()? {
             OpenDelimeter::LineComment => self.push_line_comment(),
             OpenDelimeter::Period => {
-                todo!()
+                self
+                    .token_string()
+                    .as_str()
+                    .try_into()
+                    .map(Some)
             }
             token => todo!("token {token:?}"),
         }
     }
 
     pub fn outer_token(&mut self) -> Result<OuterToken, PtxError> {
-        todo!()
+        if let Some(token) = self.outer_expression()? {
+            todo!()
+        } else {
+            self.outer_token()
+        }
+
     }
 
     fn open_delimeter(&mut self) -> Result<OpenDelimeter, PtxError> {

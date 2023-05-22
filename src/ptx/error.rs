@@ -1,9 +1,12 @@
+use super::expression::OuterToken;
+
 #[derive(Debug)]
 pub enum PtxError {
     IoError(std::io::Error),
     FromUtf8Error(std::string::FromUtf8Error),
     
     InvalidOuterToken,
+    OuterTokenOrder(OuterToken, OuterToken),
 
     NoLoadedBuffer,
     NotForwardSlashOrStar,

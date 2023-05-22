@@ -31,4 +31,17 @@ impl PtxReader {
             Some(self.line.remove(0).into())
         }
     }
+
+    pub fn token_string(&mut self) -> String {
+        let mut token = String::new();
+        println!("token_string w/ line = {:?}", self.line);
+        while let Some(c) = self.char_on_line() {
+            if c == ' ' {
+                break
+            } else {
+                token.push(c)
+            }
+        }
+        token
+    }
 }

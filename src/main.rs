@@ -12,5 +12,5 @@ fn main() {
     });
 
     let mut reader: PtxReader = file_path.try_into().unwrap();
-    let foo = reader.outer_expression().unwrap();
+    reader.populate().unwrap();
 }

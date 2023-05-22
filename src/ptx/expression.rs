@@ -1,12 +1,29 @@
 use super::{PtxReader, error::*};
 
+#[derive(Debug)]
 pub enum OuterToken {
     Version,
     Target,
     AddressSize,
-    Func,
+    Function,
     Global,
     Visible,
+}
+
+impl TryFrom<&str> for OuterToken {
+    type Error = PtxError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Ok(match value {
+            "version" => OuterToken::Version,
+            "target" => OuterToken::Target,
+            "address_size" => OuterToken::AddressSize,
+            "func" => OuterToken::AddressSize,
+            "global" => OuterToken::Global,
+            "visible" => OuterToken::Visible,
+            _ => return Err(PtxError::InvalidOuterToken),
+        })
+    }
 }
 
 #[derive(Debug)]
@@ -24,6 +41,9 @@ impl PtxReader {
                     &mut self.line, 
                     Vec::new()
         ))?));
+
+        println!("new comment! all comments:\n{:?}", self.comments);
+
         Ok(None)
     }
 }
