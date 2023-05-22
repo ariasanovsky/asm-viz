@@ -1,5 +1,5 @@
 use std::{path::PathBuf, env};
-use asm_viz::parser::*;
+use asm_viz::ptx::*;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
