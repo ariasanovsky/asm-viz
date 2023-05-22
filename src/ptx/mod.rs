@@ -64,9 +64,13 @@ impl PtxReader {
 
     fn populate_metadata(&mut self) -> Result<(), PtxError> {
         let version = self.version()?;
+        println!("version = {version}");
         let target = self.target()?;
+        println!("target = {target}");
         let address_size = self.address_size()?;
+        println!("address_size = {address_size}");
         self.metadata = Some(Metadata { version, target, address_size });
+        println!("{self:?}");
         Ok(())
     }
 
@@ -76,9 +80,7 @@ impl PtxReader {
     
     fn version(&mut self) -> Result<String, PtxError> {
         match self.outer_token()? {
-            OuterToken::Version => Ok(
-                "foo".into()
-            ),
+            OuterToken::Version => Ok(self.drain_line()?),
             token => Err(PtxError::OuterTokenOrder(
                 token, OuterToken::Version
             ))
@@ -86,18 +88,28 @@ impl PtxReader {
     }
 
     fn target(&mut self) -> Result<String, PtxError> {
-        todo!()
+        match self.outer_token()? {
+            OuterToken::Target => Ok(self.drain_line()?),
+            token => Err(PtxError::OuterTokenOrder(
+                token, OuterToken::Version
+            ))
+        }
     }
 
     fn address_size(&mut self) -> Result<String, PtxError> {
-        todo!()
+        match self.outer_token()? {
+            OuterToken::AddressSize => Ok(self.drain_line()?),
+            token => Err(PtxError::OuterTokenOrder(
+                token, OuterToken::Version
+            ))
+        }
     }
 
     fn outer_expression(&mut self) -> Result<Option<OuterToken>, PtxError> {
         let delim = self.open_delimeter()?;
         println!("delim = {delim:?}");
-        println!("buffer = {:?}", self.line);
-        match self.open_delimeter()? {
+        println!("buffer = {:?}", String::from_utf8(self.line.clone()).unwrap());
+        match delim {
             OpenDelimeter::LineComment => self.push_line_comment(),
             OpenDelimeter::Period => {
                 self
@@ -112,7 +124,7 @@ impl PtxReader {
 
     pub fn outer_token(&mut self) -> Result<OuterToken, PtxError> {
         if let Some(token) = self.outer_expression()? {
-            todo!()
+            Ok(token)
         } else {
             self.outer_token()
         }

@@ -37,10 +37,8 @@ impl PtxReader {
         self.comments.push(Comment::Line(
             self.num,
             String::from_utf8(
-                std::mem::replace(
-                    &mut self.line, 
-                    Vec::new()
-        ))?));
+                self.line.drain(..).collect()
+        )?));
 
         println!("new comment! all comments:\n{:?}", self.comments);
 

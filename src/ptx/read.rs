@@ -33,6 +33,7 @@ impl PtxReader {
     }
 
     pub fn token_string(&mut self) -> String {
+        
         let mut token = String::new();
         println!("token_string w/ line = {:?}", self.line);
         while let Some(c) = self.char_on_line() {
@@ -43,5 +44,18 @@ impl PtxReader {
             }
         }
         token
+    }
+
+    pub fn drain_line(&mut self) -> Result<String, PtxError> {
+        String::from_utf8(
+            self
+                .line
+                .drain(..)
+                .collect()
+        ).map(|str|
+        {
+            str.trim()
+                .into()
+        }).map_err(Into::into)
     }
 }
