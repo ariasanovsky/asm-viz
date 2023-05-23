@@ -56,5 +56,7 @@ pub struct DeclaredFunction {
 
 #[derive(Debug)]
 pub struct Signature {
-
+    pub(super) return_value: Option<String>,
+    pub(super) name: String,
+    pub(super) parameters: String,
 }

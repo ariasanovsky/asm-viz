@@ -93,21 +93,44 @@ impl PtxReader {
     }
 
     fn signature(&mut self) -> Result<Signature, PtxError> {
-        let mut signature = self.trimmed_drain_buffer()?;
-        println!("sig = {signature}");
-        let mut ret_value: Option<String> = None;
-        match (signature.starts_with('('), signature.find(')')) {
-            (true, None) => todo!("look for ')' on next line"),
+        let line = self.trimmed_drain_buffer()?;
+        println!("signature line = {line}");
+        let (return_value, name): (Option<String>, String) = match 
+        (line.starts_with('('), line.find(')'))
+        {
+            (true, None) => return Err(PtxError::UnclosedParenthesis),
             (true, Some(pos)) => {
-                let splits = signature.split_at(pos);
-                ret_value = Some(splits.0[1..].into());
-                signature = splits.1[1..].trim_start().into();
+                let splits = line.split_at(pos);
+                let ret_value = Some(splits.0[1..].into());
+                let name = splits.1[1..]
+                    .trim_start();
+                let name: String = match name
+                    .split_once('(')
+                {
+                    Some((pre, post)) => {
+                        todo!("pre = {pre}\n post = {post}")
+                    },
+                    None => name.to_string(),
+                };
+                (ret_value, name.into())
             },
             (false, _) => todo!(),
-        }
-        println!("ret_value = {ret_value:?}");
-        println!("signature = {signature:?}");
-        todo!()
+        };
+
+        let parameters = match self.char_after_whitespace()? {
+            '(' => {
+                self.expression_until(')')?
+                // todo!("return_value = {return_value:?}\nname = {name}")
+            },
+            _ => return Err(PtxError::MissingOpenParenthesis)
+        };
+        let sig = Ok(Signature{
+            return_value,
+            name,
+            parameters,
+        });
+        println!("sig = {sig:?}");
+        sig
     }
 
     fn version(&mut self) -> Result<String, PtxError> {

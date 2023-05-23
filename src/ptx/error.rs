@@ -8,10 +8,13 @@ pub enum PtxError {
     InvalidOuterToken,
     OuterTokenOrder(OuterToken, OuterToken),
     MetadataTokenAfterPreamble(OuterToken),
-
+    
     NoLoadedBuffer,
     NotForwardSlashOrStar,
     UnmatchedForwardSlash,
+
+    UnclosedParenthesis,
+    MissingOpenParenthesis,
 }
 
 impl From<std::io::Error> for PtxError {

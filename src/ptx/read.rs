@@ -15,6 +15,23 @@ impl PtxReader {
         Ok(self.buffer.remove(0).into())
     }
 
+    pub fn char_after_whitespace(&mut self) -> Result<char, PtxError> {
+        match self.char()? {
+            ' ' => self.char_after_whitespace(),
+            c => Ok(c)
+        }
+    }
+
+    pub fn expression_until(&mut self, end: char) -> Result<String, PtxError> {
+        let mut expression = String::new();
+        loop {
+            match self.char()? {
+                c if c != end => expression.push(c),
+                _ => return Ok(expression)
+            }
+        }
+    }
+
     pub fn load_line(&mut self) -> Result<usize, PtxError> {
         self.num += 1;
         self.reader
