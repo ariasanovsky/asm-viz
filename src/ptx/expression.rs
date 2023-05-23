@@ -48,15 +48,80 @@ impl PtxReader {
     
 
 #[derive(Debug)]
-pub struct DeclaredFunction {
-    ret_value: Option<String>,
-    name: String,
-    parameters: Vec<String>,
-}
-
-#[derive(Debug)]
 pub struct Signature {
     pub(super) return_value: Option<String>,
     pub(super) name: String,
-    pub(super) parameters: String,
+    pub(super) parameters: Vec<Parameter>,
+}
+
+#[derive(Debug)]
+pub struct Parameter {
+    data_type: String,
+    name: String,
+}
+
+#[derive(Debug)]
+pub struct RawParameters {
+    pub(super) value: String,
+}
+
+impl From<String> for RawParameters {
+    fn from(value: String) -> Self {
+        Self { value }
+    }
+}
+
+impl TryFrom<RawParameters> for Vec<Parameter> {
+    type Error = PtxError;
+
+    fn try_from(RawParameters {value}: RawParameters) -> Result<Self, Self::Error> {
+        let mut parameters = vec![];
+        let mut tokens = value.split_whitespace();
+        while let Some(keyword) = tokens.next() {
+            if keyword != ".param" {
+                return Err(PtxError::MissingParamKeyword)
+            }
+            let data_type = tokens
+                .next()
+                .ok_or(PtxError::MissingDatatype)?
+                .into();
+            let name = tokens
+                .next()
+                .ok_or(PtxError::MissingParamName)?
+                .into();
+            parameters.push(Parameter { data_type, name })
+        }
+        Ok(parameters)
+    }
+}
+
+#[derive(Debug)]
+pub struct FunctionDeclaration {
+    return_value: Option<String>,
+    name: String,
+    parameters: Vec<Parameter>,
+}
+
+impl From<Signature> for FunctionDeclaration {
+    fn from(value: Signature) -> Self {
+        let Signature { return_value, name, parameters } = value;
+        Self { return_value, name, parameters }
+    }
+}
+
+pub struct GlobalVariable {
+    alignment: usize,
+    data_type: String,
+    name: String,
+    size: Option<usize>,
+    initialization: Option<String>,
+}
+
+// todo!("convert from destructive token streams instead of String...")
+impl TryFrom<String> for GlobalVariable {
+    type Error = PtxError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        todo!()
+    }
 }

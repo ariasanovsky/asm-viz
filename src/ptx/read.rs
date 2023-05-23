@@ -5,11 +5,7 @@ use super::{PtxReader, error::*};
 impl PtxReader {
     pub fn char(&mut self) -> Result<char, PtxError> {
         while self.buffer.is_empty() {
-            while 1 == self.load_line()?
-            {
-                println!("read nothing!")
-            }
-
+            while 1 == self.load_line()? {}
         }
         
         Ok(self.buffer.remove(0).into())
@@ -17,7 +13,7 @@ impl PtxReader {
 
     pub fn char_after_whitespace(&mut self) -> Result<char, PtxError> {
         match self.char()? {
-            ' ' => self.char_after_whitespace(),
+            c if c.is_whitespace() => self.char_after_whitespace(),
             c => Ok(c)
         }
     }
@@ -50,7 +46,6 @@ impl PtxReader {
     }
 
     pub fn token_string(&mut self) -> String {
-        
         let mut token = String::new();
         //println!("token_string w/ line = {:?}", self.line);
         while let Some(c) = self.char_on_line() {

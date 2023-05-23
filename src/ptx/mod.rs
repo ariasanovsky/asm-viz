@@ -11,9 +11,9 @@ pub struct PtxReader {
     reader: Option<BufReader<File>>,
     buffer: Vec<u8>,
     num: usize,
-    comments: Vec<Comment>,
     metadata: Option<Metadata>,
-    //state: ReaderState,
+    comments: Vec<Comment>,
+    function_declarations: Vec<FunctionDeclaration>,
 }
 
 impl TryFrom<PathBuf> for PtxReader {
@@ -59,7 +59,9 @@ pub enum OpenDelimeter {
 impl PtxReader {
     pub fn populate(&mut self) -> Result<(), PtxError> {
         self.preamble()?;
-        self.body()
+        loop {
+            self.body()?
+        }
     }
 
     fn preamble(&mut self) -> Result<(), PtxError> {
@@ -70,7 +72,7 @@ impl PtxReader {
         let address_size = self.address_size()?;
         //println!("address_size = {address_size}");
         self.metadata = Some(Metadata { version, target, address_size });
-        println!("{self:?}");
+        // println!("{self:?}");
         Ok(())
     }
 
@@ -82,19 +84,33 @@ impl PtxReader {
                 OuterToken::AddressSize
             ) => Err(PtxError::MetadataTokenAfterPreamble(token)),
             OuterToken::Function => self.function(),
-            OuterToken::Global => todo!(),
+            OuterToken::Global => self.global(), // \n\.global\s+\.align\s+\d+\s+\.\S+\s+\S+
             OuterToken::Visible => todo!(),
         }
+    }
+
+    fn global(&mut self) -> Result<(), PtxError> {
+        let line: GlobalVariable = self.trimmed_drain_buffer()?.try_into()?;
+        todo!()
     }
     
     fn function(&mut self) -> Result<(), PtxError> {
         let signature = self.signature()?;
-        todo!()
+        match self.char_after_whitespace()? {
+            ';' => self.function_declarations.push(signature.into()),
+            c => todo!("{c}"),
+        }
+        
+        for fun in &self.function_declarations.last() {
+            println!("declared function: {fun:?}")
+        }
+
+        Ok(())
     }
 
     fn signature(&mut self) -> Result<Signature, PtxError> {
         let line = self.trimmed_drain_buffer()?;
-        println!("signature line = {line}");
+        // println!("signature line = {line}");
         let (return_value, name): (Option<String>, String) = match 
         (line.starts_with('('), line.find(')'))
         {
@@ -114,22 +130,24 @@ impl PtxReader {
                 };
                 (ret_value, name.into())
             },
-            (false, _) => todo!(),
+            (false, _) => {
+                (None, line)
+            },
         };
 
-        let parameters = match self.char_after_whitespace()? {
+        let parameters: RawParameters = match self.char_after_whitespace()? {
             '(' => {
                 self.expression_until(')')?
                 // todo!("return_value = {return_value:?}\nname = {name}")
             },
             _ => return Err(PtxError::MissingOpenParenthesis)
-        };
+        }.into();
         let sig = Ok(Signature{
             return_value,
             name,
-            parameters,
+            parameters: parameters.try_into()?,
         });
-        println!("sig = {sig:?}");
+        // println!("sig = {sig:?}");
         sig
     }
 
@@ -162,8 +180,8 @@ impl PtxReader {
 
     fn outer_expression(&mut self) -> Result<Option<OuterToken>, PtxError> {
         let delim = self.open_delimeter()?;
-        println!("delim = {delim:?}");
-        self._show_line();
+        // println!("delim = {delim:?}");
+        // self._show_line();
         match delim {
             OpenDelimeter::LineComment => self.push_line_comment(),
             OpenDelimeter::Period => {

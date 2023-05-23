@@ -15,6 +15,11 @@ pub enum PtxError {
 
     UnclosedParenthesis,
     MissingOpenParenthesis,
+    MissingParamKeyword,
+    MissingDatatype,
+    MissingParamName,
+
+    MissingAlignKeyword,
 }
 
 impl From<std::io::Error> for PtxError {
