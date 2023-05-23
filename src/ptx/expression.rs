@@ -109,12 +109,13 @@ impl From<Signature> for FunctionDeclaration {
     }
 }
 
+#[derive(Debug)]
 pub struct GlobalVariable {
     alignment: usize,
     data_type: String,
     name: String,
-    size: Option<usize>,
-    initialization: Option<String>,
+    dimensions: Option<String>,
+    leftover: Option<String>,
 }
 
 // todo!("convert from destructive token streams instead of String...")
@@ -122,6 +123,43 @@ impl TryFrom<String> for GlobalVariable {
     type Error = PtxError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        todo!()
+        // 😂 https://github.com/rust-lang/rust/issues/77998
+        // todo!("make less ugly, e.g., splitn")
+        let leftover = match value.split_once(' ') {
+            Some((".align", leftover)) => leftover,
+            _ => return Err(PtxError::MissingAlignKeyword),
+        };
+
+        let (alignment, leftover): (usize, _) = match leftover.split_once(' ') {
+            Some((alignment, leftover)) => {
+                (alignment.parse()?, leftover)
+            },
+            None => return Err(PtxError::MissingAlignment),
+        };
+        let (data_type, leftover) = match leftover.split_once(' ') {
+            Some((data_type, leftover)) => {
+                (data_type, leftover)
+            },
+            None => return Err(PtxError::MissingDataType),
+        };
+        let (name, leftover) = match leftover.split_once(' ') {
+            Some((name, leftover)) => {
+                (name, Some(leftover))
+            },
+            None => (leftover, None),
+        };
+
+        let (name, dimensions) = match name.split_once('[') {
+            Some((name, dimensions)) => (name, Some(dimensions)),
+            None => (name, None),
+        };
+
+        Ok(Self {
+            alignment,
+            data_type: data_type.into(),
+            name: name.into(),
+            dimensions: dimensions.map(|dim| format!("[{dim}")),
+            leftover: leftover.map(Into::into),
+        })
     }
 }

@@ -45,6 +45,7 @@ impl PtxReader {
         }
     }
 
+    // todo!("-> Option<String> w/ "" as None")
     pub fn token_string(&mut self) -> String {
         let mut token = String::new();
         //println!("token_string w/ line = {:?}", self.line);

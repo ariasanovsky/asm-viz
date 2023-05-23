@@ -1,3 +1,5 @@
+use std::num::ParseIntError;
+
 use super::expression::OuterToken;
 
 #[derive(Debug)]
@@ -20,6 +22,16 @@ pub enum PtxError {
     MissingParamName,
 
     MissingAlignKeyword,
+    MissingAlignment,
+    ParseAlignment(ParseIntError),
+    MissingDataType,
+    MissingName,
+}
+
+impl From<ParseIntError> for PtxError {
+    fn from(value: ParseIntError) -> Self {
+        Self::ParseAlignment(value)
+    }
 }
 
 impl From<std::io::Error> for PtxError {

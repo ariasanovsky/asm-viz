@@ -11,9 +11,11 @@ pub struct PtxReader {
     reader: Option<BufReader<File>>,
     buffer: Vec<u8>,
     num: usize,
+
     metadata: Option<Metadata>,
     comments: Vec<Comment>,
     function_declarations: Vec<FunctionDeclaration>,
+    global_variables: Vec<GlobalVariable>,
 }
 
 impl TryFrom<PathBuf> for PtxReader {
@@ -90,8 +92,10 @@ impl PtxReader {
     }
 
     fn global(&mut self) -> Result<(), PtxError> {
-        let line: GlobalVariable = self.trimmed_drain_buffer()?.try_into()?;
-        todo!()
+        let global: GlobalVariable = self.trimmed_drain_buffer()?.try_into()?;
+        println!("global = {global:?}");
+        self.global_variables.push(global);
+        Ok(())
     }
     
     fn function(&mut self) -> Result<(), PtxError> {
